@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#070d18">
+<title>Tabunganku — Digital Banking & Keuangan Pribadi</title>
+<!-- PWA Web App Manifest inline via Data URI -->
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Tabunganku%20Mobile%20Banking%22%2C%22short_name%22%3A%22Tabunganku%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23070d18%22%2C%22theme_color%22%3A%22%23070d18%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F192x192%2F0066ff%2Fffffff%3Ftext%3DTB%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F512x512%2F0066ff%2Fffffff%3Ftext%3DTB%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070d18;
+    --panel: #0e172a;
+    --panel2: #142138;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --line: #1e293b;
+    --primary: #0066ff;
+    --emerald: #10b981;
+    --rose: #f43f5e;
+  }
+  * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 15% 10%, #112240 0%, #070d18 65%);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #070d18; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
+  
+  .modal-backdrop {
+    background: rgba(3, 7, 15, 0.85);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.25s ease;
+  }
+  .modal-content {
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 20px);
+    opacity: 0;
+    pointer-events: none;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #38bdf840;
+    padding: 12px 22px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 100;
+    max-width: 90vw;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  /* Professional Print Styles for Bank Statement PDF Export */
+  @media print {
+    body {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .print-only {
+      display: block !important;
+    }
+    .print-container {
+      background: #ffffff !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #000000 !important;
+      padding: 0 !important;
+    }
+    .print-text-dark {
+      color: #000000 !important;
+    }
+  }
+  .print-only {
+    display: none;
+  }
+</style>
+</head>
+<body class="custom-scrollbar">
+
+<!-- PWA Install Prompt Banner (Android / Mobile) -->
+<div id="pwaBanner" class="no-print hidden bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-3 text-xs sm:text-sm font-medium flex items-center justify-between gap-3 shadow-lg">
+  <div class="flex items-center gap-2">
+    <span>📱</span>
+    <span>Install aplikasi Tabunganku di HP ini agar bisa diakses seperti aplikasi Android asli!</span>
+  </div>
+  <button id="installAppBtn" class="bg-white text-blue-900 font-bold px-3 py-1.5 rounded-lg shadow hover:bg-slate-100 transition shrink-0">Install Aplikasi</button>
+</div>
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-24">
+  
+  <!-- Digital Banking Top Bar -->
+  <header class="no-print flex items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800/80">
+    <div class="flex items-center gap-3">
+      <div class="h-11 w-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-500/20">
+        TB
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Tabunganku Mobile</h1>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">OFFLINE PWA</span>
+        </div>
+        <p class="text-xs text-slate-400">No. Rek: <span id="accountNumber" class="text-slate-300 font-mono">0101-0109-9471-509</span></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="exportPdfBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-blue-600/20 active:scale-95">
+        <span>📄</span> Cetak PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Bank Account Hero Card -->
+  <section class="no-print relative bg-gradient-to-br from-slate-900 via-slate-900/90 to-blue-950/40 border border-slate-800 rounded-3xl p-6 sm:p-8 mb-6 overflow-hidden shadow-2xl">
+    <div class="absolute -right-16 -top-16 w-60 h-60 rounded-full bg-blue-600/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute -left-16 -bottom-16 w-60 h-60 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+    
+    <div class="relative z-10">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            <span>Total Tabungan Saat Ini</span>
+            <button id="toggleBalanceVisibility" class="text-slate-400 hover:text-white transition text-sm">👁️</button>
+          </div>
+          <div id="totalSavings" class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-mono">Rp0</div>
+          <p id="totalTargetInfo" class="text-xs text-slate-400 mt-2">Mulai menabung pertamamu secara fleksibel dan aman di perangkat ini</p>
+        </div>
+        <div class="flex flex-wrap gap-2.5">
+          <button id="openNewTxModalBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-3 rounded-xl text-xs sm:text-sm flex items-center gap-2 transition active:scale-95 shadow-lg shadow-emerald-500/20">
+            <span>➕</span> Catat Transaksi
+          </button>
+          <button id="openNewPotModalBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-semibold px-4 py-3 rounded-xl text-xs sm:text-sm flex items-center gap-2 transition active:scale-95">
+            <span>🎯</span> Tambah Pos
+          </button>
+        </div>
+      </div>
+
+      <!-- Financial Statistics Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
+        <div>
+          <div class="text-[11px] text-slate-400">Gaji Bulanan</div>
+          <div id="statSalary" class="text-sm sm:text-base font-bold text-slate-200 font-mono mt-0.5">Rp0</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-slate-400">Pembayaran Tetap</div>
+          <div id="statPayment" class="text-sm sm:text-base font-bold text-amber-400 font-mono mt-0.5">Rp0</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-slate-400">Pengeluaran Bulan Ini</div>
+          <div id="statMonthlyExpense" class="text-sm sm:text-base font-bold text-rose-400 font-mono mt-0.5">Rp0</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-slate-400">Sisa Kas Bersih</div>
+          <div id="statRemainingCash" class="text-sm sm:text-base font-bold text-blue-400 font-mono mt-0.5">Rp0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Financial Settings & Budgeting Section -->
+  <section class="no-print bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 mb-6 shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-base flex items-center gap-2 text-white"><span>⚙️</span> Pengaturan Keuangan & Gaji</h3>
+      <span class="text-xs text-slate-400">Atur anggaran bulanan</span>
+    </div>
+    <form id="settingsForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Gaji Bulanan (Rp)</label>
+        <input id="inputSalary" type="number" min="0" step="10000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" value="0">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Pembayaran Tetap (Rp)</label>
+        <input id="inputPayment" type="number" min="0" step="10000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" value="0">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Target Tabungan Utama (Rp)</label>
+        <input id="inputGoal" type="number" min="0" step="50000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" value="0">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1">Rencana Nabung/Bln (Rp)</label>
+        <input id="inputMonthlyPlan" type="number" min="0" step="50000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" value="0">
+      </div>
+      <div class="sm:col-span-2 lg:col-span-4 flex justify-end pt-2">
+        <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition border border-slate-700">Simpan Pengaturan</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Pots / Savings Categories Section -->
+  <div class="no-print flex items-center justify-between mb-4">
+    <div class="flex items-center gap-2">
+      <h2 class="text-base sm:text-lg font-bold">Pos & Alokasi Tabungan</h2>
+      <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700" id="potCountBadge">0 Pos</span>
+    </div>
+    <span class="text-xs text-slate-400">Buat pos tabungan sesukamu</span>
+  </div>
+
+  <div id="potsContainer" class="no-print grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <!-- Pots injected via JS -->
+  </div>
+
+  <!-- MUTASI REKENING (Bank Statement Style Section with Search & Filters) -->
+  <div class="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+    <div>
+      <h2 class="text-base sm:text-lg font-bold">Mutasi Rekening & Pengeluaran</h2>
+      <p class="text-xs text-slate-400">Riwayat transaksi perbankan dengan saldo berjalan (Disimpan di HP ini)</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <input id="searchTx" type="text" placeholder="Cari catatan..." class="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 outline-none focus:border-blue-500 w-36 sm:w-44">
+      <select id="filterType" class="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 outline-none focus:border-blue-500">
+        <option value="all">Semua Jenis</option>
+        <option value="deposit">Setor (Masuk)</option>
+        <option value="withdrawal">Tarik Tabungan</option>
+        <option value="expense">Pengeluaran</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Statement Printable Wrapper (Target for PDF export / Print) -->
+  <div id="statementPrintArea" class="print-container bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 mb-8 shadow-xl">
+    
+    <!-- PDF / Print Header (Visible on print) -->
+    <div class="print-only mb-6 pb-4 border-b border-slate-700">
+      <div class="flex justify-between items-start">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 print-text-dark">LAPORAN MUTASI & KEUANGAN TABUNGANKU</h2>
+          <p class="text-xs text-slate-600 mt-1">Penyimpanan Independen Perangkat HP • Dicetak pada: <span id="printDate"></span></p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-slate-600">No. Rekening: <span class="font-mono text-slate-900 print-text-dark font-bold">0101-0109-9471-509</span></p>
+          <p class="text-xs text-slate-600">Nasabah: <span class="text-slate-900 print-text-dark font-semibold">Pengguna Perangkat Ini</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary box for Print -->
+    <div class="print-only mb-6 p-4 rounded-xl border border-slate-300 bg-slate-50">
+      <div class="grid grid-cols-2 gap-4 text-xs">
+        <div>
+          <span class="text-slate-600">Total Tabungan Saat Ini:</span>
+          <div id="printTotalSavings" class="text-base font-bold text-slate-900 font-mono">Rp0</div>
+        </div>
+        <div>
+          <span class="text-slate-600">Sisa Kas Bersih Bulan Ini:</span>
+          <div id="printRemainingCash" class="text-base font-bold text-slate-900 font-mono">Rp0</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="transactionsList" class="flex flex-col gap-3">
+      <!-- Transactions injected via JS -->
+    </div>
+  </div>
+
+  <!-- Footer Info -->
+  <div class="no-print bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <p>Data tersimpan independen di memori browser/HP ini saja.</p>
+    <div class="flex items-center gap-3">
+      <button id="resetDataBtn" class="bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-900/60 font-semibold px-4 py-2 rounded-xl transition">Reset Data HP Ini</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Transaction Modal (Deposit, Withdrawal, Expense) -->
+<div id="txModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop opacity-0 pointer-events-none">
+  <div class="modal-content bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl p-6 shadow-2xl transform scale-95">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-bold flex items-center gap-2 text-white"><span>💳</span> Catat Transaksi Baru</h3>
+      <button id="closeTxModal" class="text-slate-400 hover:text-white p-1">✕</button>
+    </div>
+    <form id="txForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Jenis Transaksi</label>
+        <select id="txType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-semibold">
+          <option value="deposit">📥 Setor Tabungan (Masuk ke Pos)</option>
+          <option value="withdrawal">📤 Ambil Tabungan (Dari Pos)</option>
+          <option value="expense">💸 Pengeluaran / Uang Keluar</option>
+        </select>
+      </div>
+
+      <!-- Pot Selection (Visible if deposit or withdrawal) -->
+      <div id="potSelectGroup">
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Pilih Pos Tabungan</label>
+        <select id="txPotId" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500">
+          <!-- Options injected -->
+        </select>
+      </div>
+
+      <!-- Category Selection (Visible if expense) -->
+      <div id="expenseCategoryGroup" class="hidden">
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Kategori Pengeluaran</label>
+        <select id="txCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500">
+          <option value="Makanan & Minuman">🍔 Makanan & Minuman</option>
+          <option value="Transportasi">🚗 Transportasi</option>
+          <option value="Belanja">🛍️ Belanja</option>
+          <option value="Tagihan & Utilitas">💡 Tagihan & Utilitas</option>
+          <option value="Hiburan">🎉 Hiburan</option>
+          <option value="Lainnya">📦 Lainnya</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Nominal (Rp)</label>
+          <input id="txAmount" type="number" min="1" step="1000" placeholder="Contoh: 50000" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Tanggal</label>
+          <input id="txDate" type="date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Catatan / Keterangan</label>
+        <input id="txNote" type="text" maxlength="80" placeholder="Contoh: Tabungan pertama gajian" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500">
+      </div>
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" id="cancelTxModal" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs sm:text-sm transition">Batal</button>
+        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-blue-600/20">Simpan Transaksi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Pot Modal (Create/Edit) -->
+<div id="potModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop opacity-0 pointer-events-none">
+  <div class="modal-content bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl p-6 shadow-2xl transform scale-95">
+    <div class="flex items-center justify-between mb-4">
+      <h3 id="potModalTitle" class="text-base font-bold flex items-center gap-2 text-white"><span>🎯</span> Buat Pos Tabungan Baru</h3>
+      <button id="closePotModal" class="text-slate-400 hover:text-white p-1">✕</button>
+    </div>
+    <form id="potForm" class="space-y-4">
+      <input type="hidden" id="potEditId">
+      <div class="grid grid-cols-4 gap-3">
+        <div class="col-span-1">
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Ikon</label>
+          <input id="potEmoji" type="text" value="🎯" maxlength="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 text-center text-lg text-slate-200 outline-none focus:border-blue-500">
+        </div>
+        <div class="col-span-3">
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Nama Pos Tabungan</label>
+          <input id="potName" type="text" maxlength="40" placeholder="Contoh: Dana Darurat" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1.5">Target Dana (Rp) - Opsional (0 jika tanpa target)</label>
+        <input id="potTarget" type="number" min="0" step="10000" placeholder="Contoh: 10000000" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono">
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">Menabung fleksibel di perangkat ini: isi dan tarik dana kapan saja sesukamu.</p>
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" id="cancelPotModal" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs sm:text-sm transition">Batal</button>
+        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-blue-600/20">Simpan Pos</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop opacity-0 pointer-events-none">
+  <div class="modal-content bg-slate-900 border border-slate-700 w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center transform scale-95">
+    <div id="confirmIcon" class="w-14 h-14 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 border border-rose-500/20">⚠️</div>
+    <h3 id="confirmTitle" class="text-base font-bold mb-2 text-white">Konfirmasi Tindakan</h3>
+    <p id="confirmMessage" class="text-xs text-slate-300 mb-6 leading-relaxed">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+    <div class="flex items-center gap-3">
+      <button id="confirmCancelBtn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl text-xs transition">Batal</button>
+      <button id="confirmYesBtn" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-rose-600/20">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification element -->
+<div id="toast" class="toast"></div>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+(() => {
+  const STORAGE_KEY = 'tabunganku_independent_device_v1';
+  
+  const defaultState = {
+    settings: {
+      salary: 0,
+      payment: 0,
+      goal: 0,
+      monthlyPlan: 0
+    },
+    pots: [],
+    transactions: []
+  };
+
+  let state = loadState();
+  let isBalanceVisible = true;
+  let deferredPwaPrompt = null;
+
+  const $ = id => document.getElementById(id);
+  const rupiah = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0));
+  const todayDateStr = () => {
+    const d = new Date();
+    const offset = d.getTimezoneOffset();
+    return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
+  };
+
+  function loadState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved && typeof saved === 'object' && saved.settings && Array.isArray(saved.pots) && Array.isArray(saved.transactions)) {
+        return {
+          settings: { ...defaultState.settings, ...saved.settings },
+          pots: saved.pots,
+          transactions: saved.transactions
+        };
+      }
+    } catch(e) {}
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+
+  function persist() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function showToast(msg) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el.timer);
+    el.timer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  // PWA Service Worker Registration & Install Prompt
+  if ('serviceWorker' in navigator) {
+    const swCode = `self.addEventListener('fetch', e => {});`;
+    const blob = new Blob([swCode], { type: 'text/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPwaPrompt = e;
+    $('pwaBanner').classList.remove('hidden');
+  });
+
+  $('installAppBtn').addEventListener('click', async () => {
+    if (deferredPwaPrompt) {
+      deferredPwaPrompt.prompt();
+      const { outcome } = await deferredPwaPrompt.userChoice;
+      if (outcome === 'accepted') {
+        $('pwaBanner').classList.add('hidden');
+        showToast('Aplikasi berhasil di-install di HP Anda! 🎉');
+      }
+      deferredPwaPrompt = null;
+    } else {
+      showToast('Gunakan menu titik tiga browser HP Anda lalu pilih "Tambahkan ke Layar Utama"');
+    }
+  });
+
+  // Custom Confirm Modal Handler
+  let confirmCallback = null;
+  function showConfirmModal(title, message, icon, btnText, onYes) {
+    $('confirmTitle').textContent = title;
+    $('confirmMessage').textContent = message;
+    $('confirmIcon').textContent = icon || '⚠️';
+    $('confirmYesBtn').textContent = btnText || 'Ya, Lanjutkan';
+    confirmCallback = onYes;
+    
+    const modal = $('confirmModal');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.querySelector('.modal-content').classList.remove('scale-95');
+  }
+
+  function hideConfirmModal() {
+    const modal = $('confirmModal');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.querySelector('.modal-content').classList.add('scale-95');
+    confirmCallback = null;
+  }
+
+  $('confirmCancelBtn').addEventListener('click', hideConfirmModal);
+  $('confirmYesBtn').addEventListener('click', () => {
+    if (typeof confirmCallback === 'function') confirmCallback();
+    hideConfirmModal();
+  });
+
+  // Transaction Modal handlers
+  function openTxModal(preselectPotId = '') {
+    if (state.pots.length === 0) {
+      showToast('Buat pos tabungan terlebih dahulu sebelum mencatat transaksi setoran/tarik!');
+      openPotModal(null);
+      return;
+    }
+
+    $('txDate').value = todayDateStr();
+    $('txAmount').value = '';
+    $('txNote').value = '';
+    $('txType').value = 'deposit';
+    toggleTxTypeFields('deposit');
+    
+    const select = $('txPotId');
+    select.innerHTML = '';
+    state.pots.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = `${p.emoji} ${p.name}`;
+      if (p.id === preselectPotId) opt.selected = true;
+      select.append(opt);
+    });
+
+    const modal = $('txModal');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.querySelector('.modal-content').classList.remove('scale-95');
+  }
+
+  function closeTxModal() {
+    const modal = $('txModal');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.querySelector('.modal-content').classList.add('scale-95');
+  }
+
+  function toggleTxTypeFields(type) {
+    if (type === 'expense') {
+      $('potSelectGroup').classList.add('hidden');
+      $('expenseCategoryGroup').classList.remove('hidden');
+    } else {
+      $('potSelectGroup').classList.remove('hidden');
+      $('expenseCategoryGroup').classList.add('hidden');
+    }
+  }
+
+  $('txType').addEventListener('change', e => toggleTxTypeFields(e.target.value));
+  $('openNewTxModalBtn').addEventListener('click', () => openTxModal());
+  $('closeTxModal').addEventListener('click', closeTxModal);
+  $('cancelTxModal').addEventListener('click', closeTxModal);
+
+  // Pot Modal
+  function openPotModal(pot = null) {
+    if (pot) {
+      $('potModalTitle').innerHTML = '<span>✏️</span> Edit Pos Tabungan';
+      $('potEditId').value = pot.id;
+      $('potEmoji').value = pot.emoji || '🎯';
+      $('potName').value = pot.name;
+      $('potTarget').value = pot.target;
+    } else {
+      $('potModalTitle').innerHTML = '<span>🎯</span> Buat Pos Tabungan Baru';
+      $('potEditId').value = '';
+      $('potEmoji').value = '🎯';
+      $('potName').value = '';
+      $('potTarget').value = '0';
+    }
+
+    const modal = $('potModal');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.querySelector('.modal-content').classList.remove('scale-95');
+  }
+
+  function closePotModal() {
+    const modal = $('potModal');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.querySelector('.modal-content').classList.add('scale-95');
+  }
+
+  $('openNewPotModalBtn').addEventListener('click', () => openPotModal(null));
+  $('closePotModal').addEventListener('click', closePotModal);
+  $('cancelPotModal').addEventListener('click', closePotModal);
+
+  // Fill settings input values on load
+  function fillSettingsInputs() {
+    $('inputSalary').value = state.settings.salary;
+    $('inputPayment').value = state.settings.payment;
+    $('inputGoal').value = state.settings.goal;
+    $('inputMonthlyPlan').value = state.settings.monthlyPlan;
+  }
+
+  $('settingsForm').addEventListener('submit', e => {
+    e.preventDefault();
+    state.settings.salary = Math.max(0, Number($('inputSalary').value) || 0);
+    state.settings.payment = Math.max(0, Number($('inputPayment').value) || 0);
+    state.settings.goal = Math.max(0, Number($('inputGoal').value) || 0);
+    state.settings.monthlyPlan = Math.max(0, Number($('inputMonthlyPlan').value) || 0);
+    persist();
+    render();
+    showToast('Pengaturan keuangan berhasil disimpan ⚙️');
+  });
+
+  // Calculate Running Balances & Stats
+  function calculateFinancials() {
+    const sortedAll = [...state.transactions].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created - b.created));
+    
+    let totalSavings = 0;
+    const balanceMap = {};
+    const potBalances = {};
+    state.pots.forEach(p => potBalances[p.id] = 0);
+
+    let totalExpenseThisMonth = 0;
+    const currentYearMonth = new Date().toISOString().slice(0, 7);
+
+    sortedAll.forEach(t => {
+      const amt = Number(t.amount) || 0;
+      if (t.type === 'deposit') {
+        totalSavings += amt;
+        if (potBalances[t.potId] !== undefined) potBalances[t.potId] += amt;
+        balanceMap[t.id] = totalSavings;
+      } else if (t.type === 'withdrawal') {
+        totalSavings -= amt;
+        if (potBalances[t.potId] !== undefined) potBalances[t.potId] -= amt;
+        balanceMap[t.id] = totalSavings;
+      } else if (t.type === 'expense') {
+        if ((t.date || '').startsWith(currentYearMonth)) {
+          totalExpenseThisMonth += amt;
+        }
+        balanceMap[t.id] = totalSavings;
+      }
+    });
+
+    const salary = state.settings.salary;
+    const payment = state.settings.payment;
+    const remainingCash = salary - payment - totalExpenseThisMonth;
+
+    return { totalSavings, potBalances, balanceMap, totalExpenseThisMonth, remainingCash };
+  }
+
+  // Toggle Balance Visibility
+  $('toggleBalanceVisibility').addEventListener('click', () => {
+    isBalanceVisible = !isBalanceVisible;
+    render();
+  });
+
+  // Render App UI
+  function render() {
+    const { totalSavings, potBalances, balanceMap, totalExpenseThisMonth, remainingCash } = calculateFinancials();
+
+    // Hero Header Stats
+    $('totalSavings').textContent = isBalanceVisible ? rupiah(totalSavings) : 'Rp ••••••••••';
+    $('statSalary').textContent = rupiah(state.settings.salary);
+    $('statPayment').textContent = rupiah(state.settings.payment);
+    $('statMonthlyExpense').textContent = rupiah(totalExpenseThisMonth);
+    $('statRemainingCash').textContent = rupiah(remainingCash);
+    $('potCountBadge').textContent = state.pots.length + ' Pos';
+
+    // Print summary variables
+    $('printTotalSavings').textContent = rupiah(totalSavings);
+    $('printRemainingCash').textContent = rupiah(remainingCash);
+
+    // Render Pots Cards
+    const potsContainer = $('potsContainer');
+    if (state.pots.length === 0) {
+      potsContainer.innerHTML = `
+        <div class="col-span-full text-center py-12 bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
+          <div class="text-3xl mb-2">🎯</div>
+          <h3 class="font-bold text-sm text-white mb-1">Belum Ada Pos Tabungan</h3>
+          <p class="text-xs text-slate-400 mb-4 max-w-sm mx-auto">Kamu belum memiliki pos tabungan di HP ini. Buat pos tabungan pertamamu untuk mulai menabung.</p>
+          <button id="emptyCreatePotBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-xl text-xs transition">Buat Pos Pertama</button>
+        </div>
+      `;
+      const btn = $('emptyCreatePotBtn');
+      if (btn) btn.addEventListener('click', () => openPotModal(null));
+    } else {
+      potsContainer.innerHTML = '';
+      state.pots.forEach(p => {
+        const bal = potBalances[p.id] || 0;
+        const target = Number(p.target) || 0;
+        const hasTarget = target > 0;
+        const pct = hasTarget ? Math.min(100, Math.max(0, (bal / target) * 100)) : 100;
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-700 transition shadow-lg';
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700/60 flex items-center justify-center text-2xl shrink-0">
+                  ${p.emoji || '🎯'}
+                </div>
+                <div>
+                  <h3 class="font-bold text-base text-slate-100">${p.name}</h3>
+                  <p class="text-xs text-slate-400">${hasTarget ? 'Target: ' + rupiah(target) : 'Tabungan Bebas'}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button title="Setor / Tarik" class="quick-tx-btn w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 flex items-center justify-center text-xs font-bold transition" data-id="${p.id}">➕</button>
+                <button title="Edit Pos" class="edit-pot-btn w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center text-xs transition" data-id="${p.id}">✏️</button>
+                <button title="Hapus Pos" class="del-pot-btn w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 flex items-center justify-center text-xs transition" data-id="${p.id}">🗑️</button>
+              </div>
+            </div>
+
+            <div class="my-3">
+              <div class="text-2xl font-extrabold text-white font-mono tracking-tight">${isBalanceVisible ? rupiah(bal) : 'Rp ••••••'}</div>
+            </div>
+
+            ${hasTarget ? `
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1 text-slate-400">
+                  <span>Progres: ${Math.floor(pct)}%</span>
+                  <span>Kurang ${rupiah(Math.max(0, target - bal))}</span>
+                </div>
+                <div class="h-2 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                  <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            ` : `
+              <div class="text-xs text-blue-400 font-medium bg-blue-950/30 border border-blue-900/40 rounded-xl px-3 py-2 text-center">
+                ✨ Fleksibel tanpa batas target
+              </div>
+            `}
+          </div>
+        `;
+
+        card.querySelector('.quick-tx-btn').addEventListener('click', () => openTxModal(p.id));
+        card.querySelector('.edit-pot-btn').addEventListener('click', () => openPotModal(p));
+        card.querySelector('.del-pot-btn').addEventListener('click', () => {
+          showConfirmModal(
+            'Hapus Pos Tabungan?',
+            `Pos "${p.name}" akan dihapus. Transaksi di dalamnya juga akan terhapus. Lanjutkan?`,
+            '🗑️',
+            'Hapus Pos',
+            () => {
+              state.pots = state.pots.filter(x => x.id !== p.id);
+              state.transactions = state.transactions.filter(t => t.potId !== p.id);
+              persist();
+              render();
+              showToast('Pos tabungan berhasil dihapus');
+            }
+          );
+        });
+
+        potsContainer.append(card);
+      });
+    }
+
+    // Render Mutasi Rekening & Pengeluaran (Bank Statement Style)
+    const txListContainer = $('transactionsList');
+    const searchQuery = $('searchTx').value.toLowerCase().trim();
+    const filterType = $('filterType').value;
+
+    let filteredTxs = [...state.transactions];
+    if (filterType !== 'all') {
+      filteredTxs = filteredTxs.filter(t => t.type === filterType);
+    }
+    if (searchQuery) {
+      filteredTxs = filteredTxs.filter(t => (t.note || '').toLowerCase().includes(searchQuery) || (t.category || '').toLowerCase().includes(searchQuery));
+    }
+
+    filteredTxs.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.created - a.created));
+
+    if (filteredTxs.length === 0) {
+      txListContainer.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs">Belum ada riwayat mutasi atau transaksi di HP ini. Mulai catat keuangan pertamamu di atas!</div>';
+      return;
+    }
+
+    txListContainer.innerHTML = '';
+    filteredTxs.forEach(t => {
+      const isDeposit = t.type === 'deposit';
+      const isWithdrawal = t.type === 'withdrawal';
+      const isExpense = t.type === 'expense';
+      
+      let badgeLabel = '';
+      let badgeClass = '';
+      let iconSymbol = '';
+      let subTitle = '';
+      let amountClass = '';
+      let amountPrefix = '';
+
+      if (isDeposit) {
+        const pot = state.pots.find(p => p.id === t.potId) || { name: 'Tabungan', emoji: '📥' };
+        badgeLabel = `${pot.emoji} ${pot.name}`;
+        badgeClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        iconSymbol = '📥';
+        subTitle = t.note || 'Setor tabungan';
+        amountClass = 'text-emerald-400';
+        amountPrefix = '+';
+      } else if (isWithdrawal) {
+        const pot = state.pots.find(p => p.id === t.potId) || { name: 'Tabungan', emoji: '📤' };
+        badgeLabel = `${pot.emoji} ${pot.name}`;
+        badgeClass = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+        iconSymbol = '📤';
+        subTitle = t.note || 'Ambil tabungan';
+        amountClass = 'text-amber-400';
+        amountPrefix = '−';
+      } else {
+        badgeLabel = `💸 ${t.category || 'Pengeluaran'}`;
+        badgeClass = 'bg-rose-500/10 text-rose-400 border border-rose-500/20';
+        iconSymbol = '🛒';
+        subTitle = t.note || 'Pengeluaran harian';
+        amountClass = 'text-rose-400';
+        amountPrefix = '−';
+      }
+
+      const runningBal = balanceMap[t.id] || 0;
+      const formattedDate = new Date((t.date || todayDateStr()) + 'T12:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      const item = document.createElement('div');
+      item.className = 'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-slate-700 transition';
+      
+      item.innerHTML = `
+        <div class="flex items-start sm:items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg shrink-0 mt-0.5 sm:mt-0">
+            ${iconSymbol}
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center flex-wrap gap-2">
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-200">${badgeLabel}</span>
+              <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded ${badgeClass}">${isDeposit ? 'CR / MASUK' : 'DB / KELUAR'}</span>
+            </div>
+            <div class="text-xs text-slate-300 font-medium mt-1">${subTitle}</div>
+            <div class="text-[11px] text-slate-500 font-mono mt-0.5">Ref: ${t.id} • ${formattedDate}</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
+          <div class="text-left sm:text-right">
+            <div class="text-xs sm:text-sm font-extrabold font-mono ${amountClass}">
+              ${amountPrefix}${rupiah(t.amount)}
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">Saldo: ${isBalanceVisible ? rupiah(runningBal) : 'Rp ••••••'}</div>
+          </div>
+          <button title="Hapus Mutasi" class="no-print del-tx-btn w-8 h-8 rounded-xl bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center text-xs transition" data-id="${t.id}">✕</button>
+        </div>
+      `;
+
+      item.querySelector('.del-tx-btn').addEventListener('click', () => {
+        showConfirmModal(
+          'Hapus Mutasi Transaksi?',
+          `Transaksi referensi #${t.id} akan dihapus.`,
+          '🗑️',
+          'Hapus',
+          () => {
+            state.transactions = state.transactions.filter(x => x.id !== t.id);
+            persist();
+            render();
+            showToast('Mutasi transaksi dihapus');
+          }
+        );
+      });
+
+      txListContainer.append(item);
+    });
+  }
+
+  // Event Listeners for Filters & Search
+  $('searchTx').addEventListener('input', render);
+  $('filterType').addEventListener('change', render);
+
+  // Transaction Form Submit
+  $('txForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const type = $('txType').value;
+    const amount = Number($('txAmount').value);
+    const note = $('txNote').value.trim();
+    const date = $('txDate').value || todayDateStr();
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showToast('Mohon masukkan nominal yang valid');
+      return;
+    }
+
+    const txId = 'TRX-' + Math.floor(1000 + Math.random() * 9000);
+    const newTx = {
+      id: txId,
+      type,
+      amount: Math.round(amount),
+      note,
+      date,
+      created: Date.now()
+    };
+
+    if (type === 'deposit' || type === 'withdrawal') {
+      const potId = $('txPotId').value;
+      if (!potId) {
+        showToast('Pilih pos tabungan terlebih dahulu');
+        return;
+      }
+      if (type === 'withdrawal') {
+        const { potBalances } = calculateFinancials();
+        const currentPotBal = potBalances[potId] || 0;
+        if (amount > currentPotBal) {
+          showToast('Saldo pos tabungan tidak mencukupi untuk penarikan ini!');
+          return;
+        }
+      }
+      newTx.potId = potId;
+    } else if (type === 'expense') {
+      newTx.category = $('txCategory').value;
+    }
+
+    state.transactions.push(newTx);
+    persist();
+    closeTxModal();
+    render();
+    showToast('Transaksi berhasil dicatat ✅');
+  });
+
+  // Pot Form Submit
+  $('potForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const editId = $('potEditId').value;
+    const emoji = $('potEmoji').value.trim() || '🎯';
+    const name = $('potName').value.trim();
+    const target = Math.max(0, Number($('potTarget').value) || 0);
+
+    if (!name) {
+      showToast('Nama pos tabungan tidak boleh kosong');
+      return;
+    }
+
+    if (editId) {
+      const pot = state.pots.find(p => p.id === editId);
+      if (pot) {
+        pot.emoji = emoji;
+        pot.name = name;
+        pot.target = target;
+        showToast('Pos tabungan diperbarui');
+      }
+    } else {
+      const newPot = {
+        id: 'pot_' + Date.now().toString(36),
+        emoji,
+        name,
+        target,
+        created: Date.now()
+      };
+      state.pots.push(newPot);
+      showToast('Pos tabungan baru berhasil dibuat! 🎯');
+    }
+
+    persist();
+    closePotModal();
+    render();
+  });
+
+  // PDF Export using Native window.print() formatted cleanly
+  $('exportPdfBtn').addEventListener('click', () => {
+    $('printDate').textContent = new Date().toLocaleDateString('id-ID', { dateStyle: 'full' });
+    window.print();
+  });
+
+  // Reset Data
+  $('resetDataBtn').addEventListener('click', () => {
+    showConfirmModal(
+      'Reset Rekening HP Ini?',
+      'Semua pos tabungan, pengaturan, dan riwayat transaksi pada perangkat ini akan dikembalikan ke kondisi nol (kosong bersih).',
+      '⚠️',
+      'Ya, Reset',
+      () => {
+        state = JSON.parse(JSON.stringify(defaultState));
+        persist();
+        fillSettingsInputs();
+        render();
+        showToast('Rekening pada HP ini berhasil direset');
+      }
+    );
+  });
+
+  // Initialize
+  fillSettingsInputs();
+  render();
+})();
+</script>
+</body>
+</html>
